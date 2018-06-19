@@ -1,0 +1,296 @@
+HWR_DATA_batches_subset <- read.csv("D:/HWR/SS_2018/analytische Info/Honeypot_subset/Honeypot_subset/HWR_DATA_batches_subset.csv")
+View(HWR_DATA_batches_subset)
+HWR_DATA_salaries_subset <- read.csv("D:/HWR/SS_2018/analytische Info/Honeypot_subset/Honeypot_subset/HWR_DATA_salaries_subset.csv")
+View(HWR_DATA_salaries_subset)
+HWR_DATA_talents_subset <- read.csv("D:/HWR/SS_2018/analytische Info/Honeypot_subset/Honeypot_subset/HWR_DATA_talents_subset.csv")
+View(HWR_DATA_talents_subset)
+knitr::opts_chunk$set(echo = TRUE)
+data("HWR_DATA_talents_subset")
+data(HWR_DATA_talents_subset)
+View(HWR_DATA_talents_subset)
+library(tidyverse)
+data(HWR_DATA_talents_subset)
+data(HWR_DATA_talents_subset)
+summary(HWR_DATA_talents_subset)
+HWR_DATA_talents_subset %>%
+unique(HWR_DATA_talents_subset$headline)
+HWR_DATA_talents_subset %>%
+arrange(headline)
+HWR_DATA_talents_subset %>%
+arrange(-headline)
+HWR_DATA_talents_subset %>%
+summary(headline)
+HWR_DATA_talents_subset %>%
+sum(headline)
+headlines <- HWR_DATA_talents_subset[-which(headlines=" ")]
+headlines <- HWR_DATA_talents_subset[-which(HWR_DATA_talents_subset$headline=" ")]
+headlines <- HWR_DATA_talents_subset[-which(HWR_DATA_talents_subset$headline=is.na]
+headlines <- HWR_DATA_talents_subset[is.na(HWR_DATA_talents_subset$headline)]
+summary(headlines)
+summary(HWR_DATA_talents_subset)
+headlines <- HWR_DATA_talents_subset[is.na(HWR_DATA_talents_subset$headline)]
+summary(headlines)
+View(headlines)
+View(headlines)
+headlines <- HWR_DATA_talents_subset[-is.na(HWR_DATA_talents_subset$headline)]
+summary(headlines)
+headlines <- HWR_DATA_talents_subset[!is.na(HWR_DATA_talents_subset$headline)]
+headlines <- HWR_DATA_talents_subset[!is.na(HWR_DATA_talents_subset$headline),]
+summary(headlines)
+View(headlines)
+View(headlines)
+headlines <- HWR_DATA_talents_subset[grepl(" ",HWR_DATA_talents_subset$headline)]
+headlines <- HWR_DATA_talents_subset[grepl("",HWR_DATA_talents_subset$headline)]
+summarise(HWR_DATA_talents_subset$headline)
+summarise_(HWR_DATA_talents_subset$headline)
+summary(HWR_DATA_talents_subset$headline)
+HWR_DATA_talents_subset %>% select(grep("AngularJS", HWR_DATA_talents_subset$headline))
+HWR_DATA_talents_subset %>% select(grep("AngularJS", HWR_DATA_talents_subset
+))
+HWR_DATA_talents_subset$headline %>% grep("AngularJS", HWR_DATA_talents_subset
+)
+HWR_DATA_talents_subset$headline %>% grep("AngularJS", HWR_DATA_talents_subset$headline
+)
+HWR_DATA_talents_subset$headline %>% pmatch("AngularJS", HWR_DATA_talents_subset$headline)
+talents <- HWR_DATA_talents_subset
+talents%>% filter(headline %in% "AngularJS")
+talents%>% filter(grepl("AngularJS", headline)
+talents%>% filter(grepl("AngularJS", headline)
+talents %>% filter(grepl("AngularJS", headline)
+talents %>% filter(grepl("AngularJS", headline))
+talents %>% grepl("AngularJS", headline)
+talents %>% grepl("AngularJS", talents$headline)
+talents %>% grepl("AngularJS", talents$headline, fixed = TRUE)
+talents %>% filter(!grepl('AngularJS', talents$headline, fixed = TRUE)
+talents %>% filter(!grepl('AngularJS', talents$headline, fixed = TRUE))
+talents %>% filter(!grepl('AngularJS', talents$headline))
+talents %>% filter(grepl('AngularJS', talents$headline))
+talents %>% filter(grepl('AngularJS',headline))
+talents %>% filter(grepl('AngularJS',headline)) %>% arrange(was_hired)
+talents %>% filter(grepl('AngularJS',headline)) %>% arrange(-was_hired)
+talents %>% filter(grepl('AngularJS',headline) & was_hired=1)
+talents %>% filter(grepl('AngularJS',headline) & was_hired='1')
+talents %>% filter(grepl('AngularJS',headline) & was_hired %in% '1')
+talents %>% filter(!grepl(' ',headline))
+talents %>% filter(!grepl('',headline))
+talents %>% filter(!grepl('  ',headline))
+talents %>% filter(!grepl(char.isletter ,headline))
+talents %>% filter(!grepl( char.IsLetter ,headline))
+talents %>% filter(!grepl( headline.IsLetter ,headline))
+talents %>% filter(grepl( • ,headline))
+talents %>% filter(grepl('•',headline))
+talents %>% filter(grepl("•",headline))
+talents %>% filter(grepl("\\W",headline))
+talents %>% filter(grepl("\\W",headline))
+talents %>% filter(grepl("\\w",headline))
+talents %>% filter(grepl("\\d",headline))
+talents %>% filter(grepl("\\d",headline)&grepl("\\w",headline))
+talents %>% filter(grepl("\\d",headline) | grepl("\\w",headline))
+talents %>% filter(!grepl("\\d",headline) | !grepl("\\w",headline))
+talents %>% summery(filter(!grepl("\\d",headline) | !grepl("\\w",headline)))
+talents %>% summary(filter(!grepl("\\d",headline) | !grepl("\\w",headline)))
+no_headline <- talents %>% filter(!grepl("\\d",headline) | !grepl("\\w",headline))
+summary(no_headline)
+no_headline <- talents %>% select(!grepl("\\d",headline) | !grepl("\\w",headline))
+knitr::opts_chunk$set(echo = TRUE)
+no_headline <- talents %>% select(!grepl("\\d",headline) | !grepl("\\w",headline))
+no_headline <- talents %>% select(grepl("\\d",headline) | !grepl("\\w",headline))
+---
+title: "Headline"
+author: "Tino Wagner"
+date: "6 Juni 2018"
+output: html_document
+---
+```{r}
+library(tidyverse)
+summary(HWR_DATA_talents_subset)
+summary(HWR_DATA_talents_subset$headline)
+talents <- HWR_DATA_talents_subset
+talents %>% filter(grepl('AngularJS',headline) & was_hired %in% '1')
+talents %>% filter(grepl("\\d",headline) | grepl("\\w",headline))
+no_headline <- talents %>% select(grepl("\\d",headline) | !grepl("\\w",headline))
+summary(no_headline)
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## R Markdown
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r cars}
+summary(cars)
+```
+## Including Plots
+You can also embed plots, for example:
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+library(tidyverse)
+summary(HWR_DATA_talents_subset)
+summary(HWR_DATA_talents_subset$headline)
+talents <- HWR_DATA_talents_subset
+talents %>% filter(grepl('AngularJS',headline) & was_hired %in% '1')
+talents %>% filter(grepl("\\d",headline) | grepl("\\w",headline))
+no_headline <- talents %>% select(grepl("\\d",headline) | !grepl("\\w",headline))
+?date
+x <- "2018/20/01"
+x <- "2018/20/01"
+date(x,format="%Y/%d/%m")
+as.Date(x,format="%Y/%d/%m")
+y <- as.Date(x,format="%Y/%d/%m")
+y <- as.Date(x,format="%Y/%d/%m %h:%m:%s")
+x <- "2018/20/01 05:31:45"
+y <- as.Date(x,format="%Y/%d/%m %h:%m:%s")
+x <- "2018/20/01 05:31:45"
+y <- as.Date(x,format="%Y/%d/%m %h:%m:%s")
+y <- as.Date(x,format="%Y/%d/%m %H:%M:%S")
+y <- as.POSIXct(x,format="%Y/%d/%m %H:%M:%S")
+Date2 <- lubridate::make_datetime(2017,3,20,15,33,8)
+Date-1
+Date <- date("2018-06-12")
+Date2-1
+Date2 - days(2)
+x <- "2018/20/01"
+y <- as.Date(x,format="%Y/%d/%m")
+Date <- date("2018-06-12")
+install.packages(c("lubridate","tidytext","janeaustenr"))
+library(lubridate)
+library(tidytext)
+library(tidyverse)
+library(tidytext)
+Date <- date("2018-06-12")
+install.packages(c("lubridate","tidytext","janeaustenr"))
+library(tidytext)
+install.packages(c("lubridate","tidytext","janeaustenr"))
+library(lubridate)
+library(tidytext)
+library(tidyverse)
+library(tidyverse)
+Date <- date("2018-06-12")
+jobs <- read.csv("file:///D:/HWR/SS_2018/analytische Info/Jobs_uebung.csv")
+jobs <- read.csv("D:/HWR/SS_2018/analytische Info/Jobs_uebung.csv")
+View(jobs)
+jobs <- read_csv("D:/HWR/SS_2018/analytische Info/Jobs_uebung.csv")
+jobs <- read_csv("D:/HWR/SS_2018/analytische Info/Jobs_uebung.csv")
+col_types=cols(
+Talent_id = col_integer(),
+Gender = col_character(),
+Age = col_integer(),
+Jobinterview = col_date(format = "%Y-%d-%m"),
+Kuendigung = col_date(format = "%Y-%d-%m"),
+Gehalt = col_double()
+)
+View(jobs)
+View(jobs)
+day(jobs$Jobinterview)
+jobs%>%
+summarise(jobs)
+summarise(jobs)
+summary(jobs)
+jobs <- read_csv("D:/HWR/SS_2018/analytische Info/Jobs_uebung.csv")
+col_types=cols(
+Talent_id = col_integer(),
+Gender = col_character(),
+Age = col_integer(),
+Jobinterview = col_date(format = "%Y-%m-%d"),
+Kuendigung = col_date(format = "%Y-%m-%d"),
+Gehalt = col_double()
+)
+days(jobs$Jobinterview)
+day(jobs$Jobinterview)
+date(jobs$Jobinterview)-date(jobs$Kuendigung)
+date(jobs$Kuendigung)-date(jobs$Jobinterview)
+summary(jobs)
+?ggplot
+jobs%>% ggplot(aes(Age,Gehalt))
+jobs <- read_csv("D:/HWR/SS_2018/analytische Info/Jobs_uebung.csv")
+jobs%>% ggplot(aes(Age,Gehalt))
+jobs%>% ggplot(jobs, aes(Age,Gehalt))
+jobs%>% ggplot( aes(Age,Gehalt))
+jobs%>% ggplot( aes_(Age,Gehalt))
+jobs%>% ggplot( aes(jobs$Age,jobs$Gehalt,))
+jobs%>% ggplot( aes(Age,Gehalt))
+jobs%>% ggplot( aes(x=Age,y=Gehalt))+
+geom_point()
+diamonds %>%
+ggplot(aes(y=price,x=carat))+
+geom_point(shape=21,alpha=.5)+
+facet_grid(cut~.)
+diamonds %>%
+ggplot(aes(x=carat)) +
+geom_histogram(bins=100)
+jobs%>% ggplot( aes(x=Age,y=Gehalt))+
+geom_line()
+diamonds %>%
+ggplot(aes(y=price,x=carat,size=depth))+
+geom_point(alpha=.25)
+()
+diamonds %>%
+ggplot(aes(y=price,x=carat, color=cut))+
+geom_point(alpha=.4)+
+scale_x_continuous(limits = c(1,3),breaks = seq(0,5,.5))+
+scale_y_continuous(breaks = seq(0,20000,2000))+
+labs(title="Das ist der Titel",
+subtitle="Das ist Untertitel",
+caption="Quelle: ggplots diamands",
+x="Gewicht in Carat",
+y="Price in USD")+
+theme_light()
+jobs%>% ggplot( aes(x=Age,y=Gehalt))+
+geom_line()+
+geom_smooth(method="loess", se=F)
+jobs%>% ggplot( aes(x=Age,y=Gehalt))+
+geom_line()+
+geom_smooth()
+jobs%>% ggplot( aes(x=Age,y=Gehalt))+
+geom_point()+
+geom_smooth()
+jobs%>% ggplot( aes(x=Age,y=Gehalt))+
+geom_point()+
+geom_smooth()
+jobs%>% ggplot( aes(x=Age,y=Gehalt))+
+geom_point()+
+geom_smooth()+
+facet_grid(gender~.)
+diamonds %>%
+ggplot(aes(y=price,x=carat))+
+geom_point(shape=21,alpha=.5)+
+facet_grid(cut~.)
+jobs%>% ggplot( aes(x=Age,y=Gehalt))+
+geom_point()+
+geom_smooth()+
+facet_grid(Gender~.)
+jobs%>% ggplot( aes(x=Age,y=Gender))+
+geom_point()+
+geom_smooth()
+jobs%>% ggplot( aes(x=Gender,y=Age))+
+geom_point()+
+geom_smooth()
+jobs%>% ggplot( aes(x=Gender))+
+geom_histogram()+
+facet_grid(Gender~.)
+jobs%>% ggplot( aes(x=Gender))+
+geom_histogram(stat="count")+
+facet_grid(Gender~.)
+jobs%>% ggplot( aes(x=Age,y=Gehalt))+
+geom_point()+
+geom_smooth()+
+facet_grid(Gender~.)
+summary(jobs)
+jobs%>% sd(Age)
+jobs%>% sd(c(Age)
+jobs%>% sd(c(Age))
+jobs%>% sd(c(Jobs$Age))
+jobs%>% sd(c(jobs$Age))
+jobs%>% sd(c(as.double(Age))
+jobs%>% sd(c(as.double(Age))
+jobs%>% sd(c(as.double(Age)))
+jobs%>% sd(Age)
+jobs%>% sd(as.double(Age)
+jobs%>% sd(as.double(Age))
+jobs%>% sd(select(Age))
+jobs$Age%>% sd()
+summary(jobs)
+jobs$Age%>% sd()
+?sample

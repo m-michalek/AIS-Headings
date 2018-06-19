@@ -1,0 +1,92 @@
+---
+title: "Textmining and Dates"
+author: "Max B Philipp"
+date: "12 Juni 2018"
+output: html_document
+---
+
+
+```{r}
+install.packages(c("lubridate","tidytext","janeaustenr"))
+library(lubridate)
+library(tidytext)
+library(tidyverse)
+```
+
+
+#Dates and Formats
+
+```{r}
+Date <- date("2018-06-12")
+
+day(Date)
+wday(Date)
+month(Date)
+days_in_month(Date)
+
+Date2 <- lubridate::make_datetime(2017,3,20,15,33,8)
+
+hour(Date2)
+minute(Date2)
+second(Date2)
+
+Date-1
+Date2-1
+
+Date2 - days(2)
+```
+
+
+#Uebung!
+
+Laded die .csv Datei "jobs.csv" von moodle, arbeitet in euren Gruppen.
+Analysiert die Daten sorgsam. Euer Ziel ist es, Code zu schreiben, der es erlaubt Daten mit ähnlicher Struktur zu erstellen (Daten so gut zu fälschen, dass man keinen Unterschied zu den originalen feststellen könnte).
+
+Schritt 1: Analysiert die Daten. Schaut euch an wie die Spalten miteinander zusammenhängen: Gender, Age, Jobinterview, Kuendigung und Gehalt hängen voneinander ab. 
+
+Hilfestellung:
+ * Die Kündigung erfolgt nach dem Jobinterview, betrachtet die Anzahl der Tage zwischen ihnen.
+ * schaut euch min, max und andere aggregationen der jeweiligen Spalten an um ein Gefühl für die Daten zu bekommen.
+ 
+Schritt 2: Versucht die Daten so gut es geht nachzubauen.
+
+ * Die Daten wurden mit Hilfe von zufaellig verteilten Zahlen erstellt. So gibt z.B. rnorm(10,mean=50,sd=5) 10 zahlen zurück die mit einer Standardabweichung von 5 um einen Mittelwert von 50 zentriert sind. Findet mean und sd heraus um Werte nachzubauen.
+ * ifelse() kann genutzt werden um abweichende Verteilungen zu modellieren.
+
+
+
+```{r}
+library(janeaustenr)
+library(dplyr)
+library(stringr)
+
+original_books <- austen_books() %>%
+  group_by(book) %>%
+  mutate(line = row_number(),
+         chapter = cumsum(str_detect(text, regex("^chapter [\\divxlc]",
+                                                 ignore_case = TRUE)))) %>%
+  ungroup()
+
+original_books
+```
+
+
+```{r}
+library(tidytext)
+tidy_books <- original_books %>%
+  unnest_tokens(word, text)
+```
+
+```{r}
+cleaned_books <- tidy_books %>%
+  anti_join(get_stopwords())
+```
+
+
+```{r}
+cleaned_books %>%
+  count(word, sort = TRUE) 
+```
+
+
+

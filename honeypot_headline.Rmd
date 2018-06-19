@@ -1,0 +1,153 @@
+---
+title: "Headline"
+author: "Tino Wagner"
+date: "6 Juni 2018"
+output: html_document
+---
+
+PREPERATION
+
+```{r}
+
+#
+
+#install/load packages: tidyvers, tidytext
+install.packages("magrittr")
+install.packages("tidyverse")
+install.packages("tidytext")
+library(tidyverse)
+library(tidytext)
+library(magrittr)
+library(plyr)
+library(dplyr)
+#import data sets
+batches <- read.csv("./Honeypot_subset/HWR_DATA_batches_subset.csv")
+salaries <- read.csv("./Honeypot_subset/HWR_DATA_salaries_subset.csv")
+talents <- read.csv("./Honeypot_subset/HWR_DATA_talents_subset.csv")
+
+```
+
+DATA ANALYZATION
+
+Batches
+
+```{r}
+
+#overview of batches
+summary(batches)
+batches
+#ID starts at 9, why? 
+
+# amount of times batched per talent_id hi-lo
+batches%>%
+  count("talent_id")%>%
+arrange(-freq)
+
+
+```
+
+Salaries
+
+```{r}
+# overview of salaries
+summary(salaries)
+
+#order by talents hired by city  hi-lo
+salaries%>%
+    group_by(city) %>%
+  summarise(n=n()) %>% 
+  arrange(-n)  
+#avg min salary per city
+salaries%>%
+    group_by(city) %>%
+summarise(average_sal_min=mean(minimum,na.rm=TRUE)) %>%  
+  arrange(-average_sal_min)
+
+
+#avg max slary per city
+salaries%>%
+    group_by(city) %>%
+summarise(average_sal_max=mean(maximum,na.rm=TRUE)) %>%  
+  arrange(-average_sal_max)
+
+
+```
+
+Talents
+
+```{r}
+summary(talents)
+
+
+
+talents <- HWR_DATA_talents_subset %>% 
+  filter(grepl('AngularJS',headline) & was_hired %in% '1') %>% 
+  filter(grepl("\\d",headline) | grepl("\\w",headline))
+
+# Hired Rate ?!?! no_headline <- talents %>% select(grepl("\\d",headline) | !grepl("\\w",headline))
+
+
+
+
+summary(no_headline)
+
+```
+
+```{r}
+
+```
+
+```{r}
+ 
+# MOST USED WORDS IN HEADLINES   (source: https://www.tidytextmining.com/tidytext.html#the-unnest_tokens-function)
+# turn headlines into C(Stings)
+hltext <- c(toString(talents$headline))
+
+library(dplyr) 
+#putting all strings in one line
+text_df <- data_frame(line = 1:1, text = hltext)
+
+library(ggplot2)
+#create new data "countwords" for text mining
+countwords <- text_df%>%
+#seperating 1 word per line
+unnest_tokens(word,text)%>%
+#remove common words like "a". "and" etc.
+anti_join(stop_words)%>%
+#count each word
+count(word, sort = TRUE) 
+
+countwords%>%
+#filter words that accure at least twice
+filter(n > 2) %>%
+mutate(word = reorder(word, n)) %>%
+#plot graph
+ggplot(aes(word, n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip()
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

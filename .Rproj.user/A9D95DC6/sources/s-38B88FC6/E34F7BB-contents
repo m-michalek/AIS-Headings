@@ -1,0 +1,264 @@
+---
+title: "Data Manipulation"
+author: "Max B Philipp"
+date: "29 Mai 2018"
+output: html_document
+---
+
+#Repetition from last week
+
+```{r}
+install.packages(c("nycflights13","psych"))
+library(psych)
+library(nycflights13)
+library(tidyverse)
+```
+
+
+
+```{r}
+
+set.seed(42)
+Farben <- c("Blau","Rot","Gelb","Gr?n","Braun","Orange")
+Farbe
+#dann erstelle ich einen vektor "Farbe"
+#vielebuntesmarties <- rep(Farben,20)
+#vielebuntesmarties
+#jede Farbe ist zwischen 25 und 50 mal vertreten
+Anzahl <- sample(25:50, 120, replace=TRUE)
+
+Anzahl
+#und nun noch ein Index f?r die jeweilige T?te
+Tuete <- rep(1:20,each=6)
+
+Tuete
+MundMs <- cbind.data.frame(Farbe,
+                           Anzahl,
+                           Tuete)
+
+```
+
+
+# Conditionals
+
+
+```{r}
+
+2>1
+3==3
+4<=2
+x <- TRUE
+x==TRUE
+
+MundMs$Anzahl >45
+
+Farben[4]
+Farben[3:5]
+
+#erste Reihe
+MundMs[1,]
+
+#erste Spalte
+MundMs[,2] == MundMs$Anzahl
+
+y<- MundMs[1,2]
+MundMs[1:10,2:3]
+
+# Alle reihen Anzahl > 45
+
+MundMs[MundMs$Anzahl >45,]
+
+z <-MundMs$Anzahl >45 | MundMs$Anzahl <30
+
+MundMs[z,]
+
+#any
+z <- c(TRUE, TRUE, FALSE)
+
+any(z)
+!any(z)
+
+all(z)
+
+which(z)
+```
+
+
+
+
+# Summarising Data
+
+```{r}
+data("flights")
+#summary, describe, str
+View(flights)
+
+#unique gibt alle einmaligen Eintr?ge zur?ck. SQL= DISTINCT
+unique(flights$origin)
+```
+
+#Data Manipulation with Dplyr
+
+```{r eval=FALSE}
+enjoy(cool(bake(shape(beat(append(bowl(rep("flour", 2), "yeast", "water", "milk", "oil"), "flour", until = "soft"), duration = "3mins"), as = "balls", style = "slightly-flat"), degrees = 200, duration = "15mins"), duration = "5mins")) 
+
+%>% #Pipe Operator "and than..." "into"
+  #shortcut: STRG + SHIFT + M
+
+bowl(rep("flour", 2), "yeast", "water", "milk", "oil") %>% 
+append("flour", until = "soft") %>%
+beat(duration = "3mins") %>%
+shape(as = "balls", style = "slightly-flat") %>%
+bake(degrees = 200, duration = "15mins") %>% 
+cool(buns, duration = "5mins") %>% 
+enjoy() 
+
+c(3,4) %>% sum()
+
+%irgendwas% # R Funktion
+
+
+
+```
+
+# filter
+filter() picks cases based on their values.
+
+```{r}
+MundMs %>% filter(Anzahl>45)
+filter(MundMs, Anzahl>45)
+MundMs %>% filter(Anzahl>40 & Farbe=="Gr?n") %>% filter(Tuete>9)
+
+#Fl?ge 6-8 Uhr Abflug und carrier= "UA"
+flights %>% filter(hour>6 & hour <8 & carrier=="UA")
+
+#carrier = UA oder AA oder B6 der EV
+ #%in% checkt ob das Object links in rechts enthalten ist
+  
+1 %in% 1:4
+  
+flights %>% filter(carrier %in% c("UA","AA","B6","EV") & hour==5 )
+
+```
+
+# select
+select() picks variables based on their names.
+
+```{r}
+flights %>% select(1:4)
+flights %>% select(year, month, dep_time)
+flights %>% select(-c(4:19))
+
+  
+flights %>% 
+  filter(carrier %in% c("UA","AA","B6","EV") & hour==5 ) %>% 
+  select(day,dep_time)
+
+```
+
+
+# arrange
+arrange() changes the ordering of the rows.
+
+```{r}
+flights %>% arrange(carrier,hour)
+flights %>% arrange(-hour)
+
+flights %>% 
+  filter(carrier %in% c("UA","AA","B6","EV") & hour==5) %>% 
+  select(day,dep_time,dep_delay) %>%
+  arrange(-dep_time)
+
+```
+
+
+# mutate
+mutate() adds new variables that are functions of existing variables
+
+```{r}
+flights %>% filter(dep_delay>120) %>% select(dep_delay,arr_delay)
+
+cor.test(flights$dep_delay, flights$arr_delay)
+
+flights <- flights %>% mutate(air_time_h=air_time/60,
+                   speed=distance/air_time_h,
+                   verloren_aufgeholt=dep_delay-arr_delay,
+                   verlorene_zeit=ifelse(verloren_aufgeholt>0,
+                                         "In der luft gut gemacht",
+                                         "Zeit in der Luft verloren")
+                   )
+plot(flights$speed,flights$verloren_aufgeholt)
+
+```
+
+
+# summarise
+summarise() reduces multiple values down to a single summary.
+
+```{r}
+flights %>% summarise(average_speed=mean(speed, na.rm=TRUE),
+                      sd_speed=sd(speed, na.rm=TRUE))
+
+
+```
+
+# group_by
+
+```{r}
+data("planes")
+View(planes)
+
+
+flights %>% 
+  group_by(carrier) %>%
+  summarise(average_speed=mean(speed, na.rm=TRUE),
+                      sd_speed=sd(speed, na.rm=TRUE)) %>% 
+  arrange(-average_speed)
+
+flights %>% 
+  mutate(tagflug=ifelse(hour>6 & hour<22,"Tag","Nacht")) %>% 
+  group_by(tagflug) %>%
+  summarise(average_speed=mean(speed, na.rm=TRUE),
+                      sd_speed=sd(speed, na.rm=TRUE)) %>% 
+  arrange(-average_speed)
+
+```
+
+#joins 
+
+```{r}
+planes_clear <- planes %>% 
+                        select(tailnum,seats,engines)
+
+flights %>% left_join(planes_clear, by = "tailnum")
+```
+
+
+
+#?bung
+
+Die folgende Auslastung ist gegeben: Nachtfl?ge (zwischen 22 und 6 Uhr) sind zu 45% ausgelastet, Tagfl?ge zu 65%. In den Wintermonaten (November bis Februar) ist die Auslastung um 10 % gesenkt.
+
+ * Wie viel Prozent aller Fl?ge kommen fr?her an als geplant?
+ * Nennen Sie die top 5 Flugh?fen, zu dem die meisten Passagiere geflogen werden!
+ * Welche Fluggesellschaft fliegt im Schnitt am schnellsten?
+ * Auf welcher Route sind die gr??ten Flugzeuge unterwegs?
+ * Welcher der 3 New Yorker Flugh?fen hat die meisten Abfl?ge, und wie hoch ist die durchschnittliche Passagierzahl?
+ * Wie hoch ist das durchschnittliche Flugaufkommen pro Monat?
+ * Gegeben, dass jeder Passagier der Fluggesellschaft 10 cent pro geflogene Meile zahlt, welche Fluggesellschaft hat den h?chsten Umsatz gemacht, pro Monat und Startflughafen.
+ 
+
+
+```{r}
+
+```
+
+
+# Data Visualisation
+
+```{r}
+library(tidyverse)
+data("diamonds")
+summary(diamonds)
+```
+
