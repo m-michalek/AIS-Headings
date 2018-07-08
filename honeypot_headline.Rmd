@@ -8,18 +8,19 @@ output: html_document
 PREPERATION
 
 ```{r}
-
-#
-
 #install/load packages: tidyvers, tidytext
-install.packages("magrittr")
-install.packages("tidyverse")
-install.packages("tidytext")
+#install.packages("magrittr")
+#install.packages("tidyverse")
+#install.packages("tidytext")
+#install.packages("wordcloud")
 library(tidyverse)
 library(tidytext)
 library(magrittr)
 library(plyr)
 library(dplyr)
+library(ggplot2)
+library(wordcloud)
+
 #import data sets
 batches <- read.csv("./Honeypot_subset/HWR_DATA_batches_subset.csv")
 salaries <- read.csv("./Honeypot_subset/HWR_DATA_salaries_subset.csv")
@@ -27,12 +28,303 @@ talents <- read.csv("./Honeypot_subset/HWR_DATA_talents_subset.csv")
 
 ```
 
+Text Mining
+```{r}
+# filter for talents with a headline
+with_headlines <- talents %>% 
+  filter(talents$headline != "")
+
+# filter for talents without a headline
+without_headlines <- talents %>% 
+  filter(talents$headline == "")
+
+# Dataframe with talen_id and headline
+headlines_df <- data_frame(talent_id = with_headlines$talent_id, headline = as.vector(with_headlines$headline))
+
+# split a headline (one row per headline) to one word per row with corresponding talent_id
+unnested_headlines <- headlines_df %>%
+  unnest_tokens(word, headline)
+
+# word count
+word_count <- unnested_headlines %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(talent_id ,word) %>% 
+  count_() %>% 
+  arrange(-n)
+  
+word_count_per_talent_id <- word_count %>% 
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-nn)
+
+colnames(word_count_per_talent_id) <- c("word", "n")
+
+# number of words used per talent_id
+word_count_per_headline <- unnested_headlines %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(talent_id) %>% 
+  count_() %>% 
+  arrange(-n)
+
+# refactor levels of word in word_count_per_talent_id
+word_count_per_talent_id$word <- factor(word_count_per_talent_id$word, levels = word_count_per_talent_id$word)
+
+# new data frame with most used 20 words
+most_20_words <- data_frame(word = word_count_per_talent_id$word[1:20], n = word_count_per_talent_id$n[1:20])
+# add all other words aggregated as "Other words" with their count
+most_20_words <- rbind(most_20_words, data.frame(word = "Other words", n = sum(word_count_per_talent_id$n[21:length(word_count_per_talent_id)])))
+#refactor levels
+most_20_words$word <- factor(most_20_words$word, levels = most_20_words$word)
+
+# plot word count most used 20 words and other words
+most_20_words %>% 
+  ggplot(aes(x = word, y = n)) +
+  geom_col()
+
+# 12060 were invited_to_call
+invited_to_call <- talents %>% 
+  filter(invited_to_call == 1)
+
+talents %>%
+  filter(was_batched == 1, interview_invites != 0) %>% 
+  count_()
+
+talents %>% 
+  filter(was_hired == 1) %>% 
+  count_()
+
+# Wort auftreten in batched und !Wort in batched
+was_batched <- talents %>% 
+  filter(was_batched == 1) %>% 
+  left_join(word_count)
+
+was_batched <- was_batched[c("talent_id", "word", "n")]
+
+was_batched <- was_batched %>% 
+  count_("word") %>% 
+  arrange(-nn) %>% 
+  mutate("propability" = nn / was_batched %>% 
+           group_by(talent_id) %>% 
+           count_() %>% 
+           nrow()
+         )
+
+colnames(was_batched) <- c("word", "n_was_bached", "propability_was_bached")
+
+#id die gebached wurden in develop benutzen
+#Anzahl der Leute die gebatched wurden und developer in der headline haben
+word_count %>% 
+  filter(word == "developer") %>% 
+  inner_join(talents) %>% 
+  filter(interview_invites > 0) %>% 
+  nrow() %>% 
+  View()
+
+#Anzahl der Leute die gebatched wurden und !developer in der headline haben
+developer_in_headline <- word_count %>% 
+  filter(word == "developer") %>% 
+  inner_join(talents) %>% 
+  filter(interview_invites > 0)
+
+experience_in_headline <- word_count %>% 
+  filter(word == "experience") %>% 
+  inner_join(talents) %>% 
+  filter(interview_invites > 0)
+
+engineer_in_headline <- word_count %>% 
+  filter(word == "engineer") %>% 
+  inner_join(talents) %>% 
+  filter(interview_invites > 0)
+
+senior_in_headline <- word_count %>% 
+  filter(word == "senior") %>% 
+  inner_join(talents) %>% 
+  filter(interview_invites > 0)
+
+position_in_headline <- word_count %>% 
+  filter(word == "position") %>% 
+  inner_join(talents) %>% 
+  filter(interview_invites > 0)
+
+no_developer_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "developer"), by = "talent_id")
+
+no_experience_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "experience"), by = "talent_id")
+
+no_engineer_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "engineer"), by = "talent_id")
+
+no_senior_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "senior"), by = "talent_id")
+
+no_position_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "position"), by = "talent_id")
+  
+no_developer_in_headline %>% 
+  filter(interview_invites > 0) 
+
+no_experience_in_headline %>% 
+  filter(interview_invites > 0)
+
+no_engineer_in_headline %>% 
+  filter(interview_invites > 0)
+
+no_senior_in_headline %>% 
+  filter(interview_invites > 0)
+
+no_position_in_headline %>% 
+  filter(interview_invites > 0)
+
+"1_top_5_words" <- most_20_words[1:5,] %>% 
+  mutate("used_invite" = c(nrow(developer_in_headline), nrow(experience_in_headline), nrow(engineer_in_headline), nrow(senior_in_headline), nrow(position_in_headline)), "total_not_used" = c(nrow(no_developer_in_headline), nrow(no_experience_in_headline), nrow(no_engineer_in_headline), nrow(no_senior_in_headline), nrow(no_position_in_headline)), "total_not_used_invited" = c(nrow(filter(no_developer_in_headline, interview_invites > 0)), nrow(filter(no_experience_in_headline, interview_invites > 0)), nrow(filter(no_engineer_in_headline, interview_invites > 0)), nrow(filter(no_senior_in_headline, interview_invites > 0)), nrow(filter(no_position_in_headline, interview_invites > 0))))
+
+`1_top_5_words` <-  `1_top_5_words` %>% 
+  mutate("%_used_invite" = used_invite / n, "%_not_used_invite" = total_not_used_invited / total_not_used)
+
+`1_top_5_words` %>% 
+  ggplot(aes(x = word, y = ))
+
+wasnt_batched <- talents %>% 
+  filter(interview_invites > 0 & was_batched == 1) %>%
+  left_join(word_count)
+
+wasnt_batched <- wasnt_batched[c("talent_id", "interview_invites", "word", "n")]
+
+wasnt_batched <- wasnt_batched %>% 
+  count_("word") %>% 
+  arrange(-nn) %>%
+  mutate("propability" = nn / wasnt_batched %>% 
+           group_by(talent_id) %>% 
+           count_() %>% 
+           nrow()
+         )
+
+colnames(wasnt_batched) <- c("word", "n_wasnt_invited", "propability_wasnt_invited")
+
+
+
+combined_invited <- was_batched %>% 
+  full_join(wasnt_batched) %>% 
+  mutate("propability_difference" = propability_was_invited - wasnt_batched$propability_wasnt_invited)
+  
+
+```
+
+Wordcloud
+```{r}
+wordcloud(unnested_headlines_total$word[1:200], unnested_headlines_total$n[1:200])
+
+```
+
+
+headline vs !headline
+```{r}
+#
+with_headlines_was_batched <- with_headlines %>% 
+  filter(was_batched == 1)  
+
+# 7 wurden gebatched ohne headline
+without_headlines_was_batched <- without_headlines %>% 
+  filter(was_batched == 1) 
+
+with_headlines_was_hired <- with_headlines %>% 
+  filter(was_hired == 1)
+
+without_headlines_was_hired <- without_headlines %>% 
+  filter(was_hired == 1)
+
+# um gebatched zu werden brauch man eine headline
+data_frame( headline = c("headline","no headline"), n = c(nrow(with_headlines_was_batched), nrow(without_headlines_was_batched))) %>% 
+  ggplot(aes(x = headline, y = n)) +
+  geom_col()
+
+# um gehired zu werden muss man gebatched werden (ausnahme von 9)
+data_frame( headline = c("headline","no headline"), n = c(nrow(with_headlines_was_hired), nrow(without_headlines_was_hired))) %>% 
+  ggplot(aes(x = headline, y = n)) +
+  geom_col()
+
+# Ausnahmen: 9 wurden gehired ohne batch
+was_hired_without_batched <- talents %>% 
+  filter(was_hired == 1, was_batched == 0)
+
+
+headlines_df_was_hired <- data_frame(talent_id = filter(with_headlines, was_hired == 1)$talent_id, headline = as.vector(filter(with_headlines, was_hired == 1)$headline))
+
+unnested_headlines_was_hired <- headlines_df_was_hired %>%
+  unnest_tokens(word, headline) %>% 
+  anti_join(stop_words) %>% 
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+
+unnested_headlines_total <- headlines_df %>%
+  unnest_tokens(word, headline) %>% 
+  anti_join(stop_words) %>% 
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+# Versuch jedem Wort eine Wahrscheinlichkeit zuordnen die zum hired führt
+hired_words_propability <- inner_join(unnested_headlines_was_hired, unnested_headlines_total, by = "word")
+
+colnames(hired_words_propability) <- c("word", "n_hired", "n_total")
+
+hired_words_propability <- hired_words_propability %>% 
+  mutate(propability = n_hired / n_total )
+
+
+# ----------------------------------------------------
+developer_talents <- unnested_headlines %>% 
+  filter(word == "developer") %>% 
+  group_by(talent_id) %>% 
+  count_() %>% 
+  arrange(-n)
+
+developer_talents <- developer_talents %>% 
+  inner_join(talents)
+
+summary(developer_talents)
+
+#TODO
+# Workexperience headline vs workexperience developer
+developer_talents_workexperience <- developer_talents %>% 
+  group_by(work_experience) %>% 
+  count_()
+
+talents_workexperience <- talents %>% 
+  group_by(work_experience) %>% 
+  count_()
+
+developer_talents_workexperience <- developer_talents_workexperience %>% 
+  filter(work_experience != "") %>% 
+  mutate(verhaeltnis = nn/sum(nn))
+
+talents_workexperience <- talents_workexperience %>% 
+  filter(work_experience != "", n != 1) %>% 
+  mutate(verhaeltnis = n/sum(n))
+
+colnames(developer_talents_workexperience) <- c("work_experience", "n_developer", "verhältnis_developer")
+
+joined_work_experience <- inner_join(developer_talents_workexperience, talents_workexperience)
+
+ggplot(joined_work_experience, aes(x = work_experience, y = verhältnis_developer)) +
+geom_col()
+
+# Workexperience hired 
+# workexperience total vs workexperience hired 
+
+```
+
+
 DATA ANALYZATION
 
 Batches
 
 ```{r}
-
 #overview of batches
 summary(batches)
 batches
