@@ -187,33 +187,61 @@ no_position_in_headline %>%
   mutate("%_used_invite" = used_invite / n, "%_not_used_invite" = total_not_used_invited / total_not_used)
 
 `1_top_5_words` %>% 
-  ggplot(aes(x = word, y = ))
-
-wasnt_batched <- talents %>% 
-  filter(interview_invites > 0 & was_batched == 1) %>%
-  left_join(word_count)
-
-wasnt_batched <- wasnt_batched[c("talent_id", "interview_invites", "word", "n")]
-
-wasnt_batched <- wasnt_batched %>% 
-  count_("word") %>% 
-  arrange(-nn) %>%
-  mutate("propability" = nn / wasnt_batched %>% 
-           group_by(talent_id) %>% 
-           count_() %>% 
-           nrow()
-         )
-
-colnames(wasnt_batched) <- c("word", "n_wasnt_invited", "propability_wasnt_invited")
-
-
-
-combined_invited <- was_batched %>% 
-  full_join(wasnt_batched) %>% 
-  mutate("propability_difference" = propability_was_invited - wasnt_batched$propability_wasnt_invited)
+  ggplot(aes(x = word, y = "%_used_invite", fill = used_invite)) +
+  geom_col()
   
 
 ```
+
+```{r}
+install.packages("scales")
+install.packages("zoo")
+
+library(scales)
+library(zoo)
+
+
+# welche wörter waren die 5 meist verwendetsten pro monat
+batches$created_at <- as.Date(batches$created_at)
+
+batches$month_year <- as.yearmon(batches$created_at)
+
+B_batches_over_time <- batches %>% 
+  group_by(batch_id) %>% 
+  count_()
+
+ggplot(B_batches_over_time, aes(x = batch_id, y = n)) + 
+  geom_col()
+
+# Erkenntnis!!!!!: was_batched ist inkonsisten, es gibt mehr gebatchete talents in der baches.csv
+batches %>% 
+  left_join(unnested_headlines) %>% 
+  left_join(talents) %>%
+  filter(was_batched == 0) %>% 
+  group_by(talent_id) %>% 
+  count_() %>% 
+  View()
+
+#TODO
+#ggplot colchart/barchar bar 1 count was_batched // bar 2 was batched in batches aber was_batched == 0
+# eventuell noch talents korrigieren
+
+batches %>% 
+  left_join(unnested_headlines) %>% 
+  anti_join(stop_words) %>% 
+  group_by(month_year, word) %>% 
+  count_() %>% 
+  View()
+  
+talents %>% 
+  filter(was_batched == 0, headline != "")
+
+ggplot(batches, aes(x = month_year)) +
+  geom_bar()
+
+str(batches)
+```
+
 
 Wordcloud
 ```{r}
