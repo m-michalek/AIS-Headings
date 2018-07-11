@@ -194,6 +194,238 @@ no_position_in_headline %>%
 ```
 
 ```{r}
+# Analyzing word and document frequency: tf-idf
+# Find important words through bind_tf_idf
+# the numbers are not very meaningful. Maybe they would be better if all headlines for a work_role are grouped and analyzed into one big headline.
+# what worked was to get words which were oftent used in combination with a given word
+
+headlines_bigrams <- headlines_df %>%
+  unnest_tokens(bigram, headline, token = "ngrams", n = 2)
+
+headlines_bigrams %>%
+  count_("bigram", sort = TRUE) %>% 
+  View()
+
+library(tidyr)
+
+bigrams_separated <- headlines_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigrams_filtered <- bigrams_separated %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+# new bigram counts:
+bigram_counts <- bigrams_filtered %>% 
+  dplyr::count(word1, word2)
+
+bigram_counts
+
+bigrams_united <- bigrams_filtered %>%
+  unite(bigram, word1, word2, sep = " ")
+
+bigrams_united
+
+bigrams_filtered %>%
+  dplyr::filter(word2 == "developer") %>%
+  dplyr::count(talent_id, word1, sort = TRUE) %>% 
+  View()
+
+developer_types <- bigrams_filtered %>%
+  dplyr::filter(word2 == "developer") %>%
+  dplyr::count(talent_id, word1, sort = TRUE) %>% 
+  group_by(word1) %>% 
+  dplyr::count_() %>% 
+  arrange(-nn)
+
+developer_types[1:10,] %>% 
+  ggplot(aes(x = reorder(word1, -nn), y = nn)) +
+  geom_col() +
+  xlab("Häufigst erwähnte Wörter im Zusammenhang mit developer") +
+  ylab("n")
+
+#install.packages("igraph")
+library(igraph)
+
+# original counts
+bigram_counts
+
+bigram_graph <- bigram_counts %>%
+  filter(n > 20) %>%
+  graph_from_data_frame()
+
+bigram_graph
+
+#install.packages("ggraph")
+library(ggraph)
+set.seed(2017)
+
+ggraph::ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+```
+
+
+```{r}
+# top 5 Wörter der work_roles
+with_headlines_work_roles <- with_headlines %>% 
+  filter(work_roles != "{}")
+
+# Anzahl der vertretenen workroles ermittelt
+with_headlines_work_roles %>% 
+  group_by(work_roles) %>% 
+  count_("work_roles") %>% 
+  arrange(-n) %>% 
+  View()
+
+#-----
+with_headlines_backend_fullstack <- with_headlines %>% 
+  filter(work_roles == "{Backend,Fullstack}")
+
+headlines_backend_fullstack_df <- data_frame(talent_id = with_headlines_backend_fullstack$talent_id, headline = as.vector(with_headlines_backend_fullstack$headline))
+
+# split a headline (one row per headline) to one word per row with corresponding talent_id
+unnested_headlines_backend_fullstack <- headlines_backend_fullstack_df %>%
+  unnest_tokens(word, headline)
+
+#
+unnested_headlines_backend_fullstack <- unnested_headlines_backend_fullstack %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+
+#top 5 Wörter in backend_fullstack
+unnested_headlines_backend_fullstack[1:5,] %>% 
+  View()
+
+#-----
+with_headlines_backend <- with_headlines %>% 
+  filter(work_roles == "{Backend}")
+
+headlines_backend_df <- data_frame(talent_id = with_headlines_backend$talent_id, headline = as.vector(with_headlines_backend$headline))
+
+# split a headline (one row per headline) to one word per row with corresponding talent_id
+unnested_headlines_backend <- headlines_backend_df %>%
+  unnest_tokens(word, headline)
+
+#
+unnested_headlines_backend <- unnested_headlines_backend %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+
+#top 5 Wörter in backend
+unnested_headlines_backend[1:5,] %>% 
+  View()
+
+#-----
+with_headlines_frontend <- with_headlines %>% 
+  filter(work_roles == "{Frontend}")
+
+headlines_frontend_df <- data_frame(talent_id = with_headlines_frontend$talent_id, headline = as.vector(with_headlines_frontend$headline))
+
+# split a headline (one row per headline) to one word per row with corresponding talent_id
+unnested_headlines_frontend <- headlines_frontend_df %>%
+  unnest_tokens(word, headline)
+
+#
+unnested_headlines_frontend <- unnested_headlines_frontend %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+
+#top 5 Wörter in frontend
+unnested_headlines_frontend[1:5,] %>% 
+  View()
+
+#-----
+with_headlines_mobile <- with_headlines %>% 
+  filter(work_roles == "{Mobile}")
+
+headlines_mobile_df <- data_frame(talent_id = with_headlines_mobile$talent_id, headline = as.vector(with_headlines_mobile$headline))
+
+# split a headline (one row per headline) to one word per row with corresponding talent_id
+unnested_headlines_mobile <- headlines_mobile_df %>%
+  unnest_tokens(word, headline)
+
+#
+unnested_headlines_mobile <- unnested_headlines_mobile %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+
+#top 5 Wörter in mobile
+unnested_headlines_mobile[1:5,] %>% 
+  View()
+  
+#-----
+with_headlines_frontend_fullstack <- with_headlines %>% 
+  filter(work_roles == "{Frontend,Fullstack}")
+
+headlines_frontend_fullstack_df <- data_frame(talent_id = with_headlines_frontend_fullstack$talent_id, headline = as.vector(with_headlines_frontend_fullstack$headline))
+
+# split a headline (one row per headline) to one word per row with corresponding talent_id
+unnested_headlines_frontend_fullstack <- headlines_frontend_fullstack_df %>%
+  unnest_tokens(word, headline)
+
+#
+unnested_headlines_frontend_fullstack <- unnested_headlines_frontend_fullstack %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+
+#top 5 Wörter in frontend fullstack
+unnested_headlines_frontend_fullstack[1:5,] %>% 
+  View()
+
+#---- gesamtübersicht top 5 work roles
+
+top_5_words_per_work_role <- data_frame("{Backend,Fullstack}" = unnested_headlines_backend_fullstack$word[1:5],"{Backend,Fullstack} n" = unnested_headlines_backend_fullstack$n[1:5], "{Backend}" = unnested_headlines_backend$word[1:5], "{Backend} n" = unnested_headlines_backend$n[1:5], "{Frontend}" = unnested_headlines_frontend$word[1:5], "{Frontend} n" = unnested_headlines_frontend$n[1:5],  "{Mobile}" = unnested_headlines_mobile$word[1:5], "{Mobile} n" = unnested_headlines_mobile$n[1:5], "{Frontend,Fullstack}" = unnested_headlines_frontend_fullstack$word[1:5],  "{Frontend,Fullstack} n" = unnested_headlines_frontend_fullstack$n[1:5])
+
+#backend fullstack
+unnested_headlines_backend_fullstack[1:5,] %>% 
+  ggplot(aes(x = word, y = n)) +
+  geom_col() 
+
+#backend 
+unnested_headlines_backend[1:5,] %>% 
+  ggplot(aes(x = word, y = n)) +
+  geom_col() 
+
+#frontend
+unnested_headlines_frontend[1:5,] %>% 
+  ggplot(aes(x = word, y = n)) +
+  geom_col()
+
+#mobile
+unnested_headlines_mobile[1:5,] %>% 
+  ggplot(aes(x = word, y = n)) +
+  geom_col() 
+
+#frontend fullstack
+unnested_headlines_frontend_fullstack[1:5,] %>% 
+  ggplot(aes(x = word, y = n)) +
+  geom_col() 
+
+```
+
+```{r}
 install.packages("scales")
 install.packages("zoo")
 
@@ -206,6 +438,18 @@ batches$created_at <- as.Date(batches$created_at)
 
 batches$month_year <- as.yearmon(batches$created_at)
 
+batches %>% 
+  left_join(unnested_headlines) %>% 
+  anti_join(stop_words) %>% 
+  group_by(month_year) %>% 
+  count_("word") %>% 
+  View()
+
+View(batches)
+
+
+
+
 B_batches_over_time <- batches %>% 
   group_by(batch_id) %>% 
   count_()
@@ -213,8 +457,9 @@ B_batches_over_time <- batches %>%
 ggplot(B_batches_over_time, aes(x = batch_id, y = n)) + 
   geom_col()
 
-# Erkenntnis!!!!!: was_batched ist inkonsisten, es gibt mehr gebatchete talents in der baches.csv
-batches %>% 
+# Erkenntnis!!!!!: was_batched ist inkonsistent, es gibt mehr gebatchete talents in der baches.csv
+
+talent_id_and_count_error_was_batched <- batches %>% 
   left_join(unnested_headlines) %>% 
   left_join(talents) %>%
   filter(was_batched == 0) %>% 
@@ -222,9 +467,25 @@ batches %>%
   count_() %>% 
   View()
 
+error_was_batched <- batches %>% 
+  left_join(unnested_headlines) %>% 
+  left_join(talents) %>%
+  filter(was_batched == 0) %>% 
+  group_by(talent_id) %>% 
+  count_() %>% 
+  nrow()
+
+talents
+
 #TODO
 #ggplot colchart/barchar bar 1 count was_batched // bar 2 was batched in batches aber was_batched == 0
 # eventuell noch talents korrigieren
+# um gebatched zu werden brauch man eine headline
+
+
+data_frame( was_bached = c("talents","batches"), n = c(nrow(with_headlines_was_batched), error_was_batched + nrow(with_headlines_was_batched))) %>% 
+  ggplot(aes(x = was_bached, y = n)) +
+  geom_col()
 
 batches %>% 
   left_join(unnested_headlines) %>% 
