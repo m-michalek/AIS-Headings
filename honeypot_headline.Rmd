@@ -1,8 +1,7 @@
 ---
 title: "Headline"
-author: "Tino Wagner"
+author: "Tino Wagner, Max Michalek, Lukas Ziebold"
 date: "6 Juni 2018"
-output: html_document
 ---
 
 PREPERATION
@@ -12,7 +11,7 @@ PREPERATION
 #install.packages("magrittr")
 #install.packages("tidyverse")
 #install.packages("tidytext")
-install.packages("wordcloud")
+#install.packages("wordcloud")
 library(tidyverse)
 library(tidytext)
 library(magrittr)
@@ -21,7 +20,7 @@ library(dplyr)
 library(ggplot2)
 library(wordcloud)
 
-#import data sets
+#Importieren der Datensätze
 batches <- read.csv("./Honeypot_subset/HWR_DATA_batches_subset.csv")
 salaries <- read.csv("./Honeypot_subset/HWR_DATA_salaries_subset.csv")
 talents <- read.csv("./Honeypot_subset/HWR_DATA_talents_subset.csv")
@@ -30,30 +29,30 @@ talents <- read.csv("./Honeypot_subset/HWR_DATA_talents_subset.csv")
 
 Text Mining
 ```{r}
-# filter for talents with a headline
+# Filtern nach allen Talenten mit einer Headline
 with_headlines <- talents %>% 
   filter(talents$headline != "")
 
-# filter for talents without a headline
+# Filtern nach allen Talenten ohne einer Headline
 without_headlines <- talents %>% 
   filter(talents$headline == "")
 
-# Dataframe with talen_id and headline
+# Erstellen eines Data Frames mit "talent_id" und "headline"
 headlines_df <- data_frame(talent_id = with_headlines$talent_id, headline = as.vector(with_headlines$headline))
 
-# split a headline (one row per headline) to one word per row with corresponding talent_id
+# Aufteilen von eine Headline pro Reihe in ein Wort pro Reihe ohne die Zuordnung zum Talent zu verlieren
 unnested_headlines <- headlines_df %>%
   unnest_tokens(word, headline)
 
-# word count
+# Auflistung der Häufigkeiten wie oft ein Wort pro Headline vorkommt
+# Stopwords werden entfernt und nach der Häufigkeit sortiert
 word_count <- unnested_headlines %>%
-  # delete stop words
   anti_join(stop_words) %>%
-  # Group by each word
   group_by(talent_id ,word) %>% 
   count_() %>% 
   arrange(-n)
   
+# Auflistung der Gesamthäufigkeit der Wörter in den Headlines
 word_count_per_talent_id <- word_count %>% 
   group_by(word) %>% 
   count_() %>% 
@@ -61,28 +60,31 @@ word_count_per_talent_id <- word_count %>%
 
 colnames(word_count_per_talent_id) <- c("word", "n")
 
-# number of words used per talent_id
+# Anzahl der insgesamt genutzen Wörter pro Talent
 word_count_per_headline <- unnested_headlines %>%
-  # delete stop words
   anti_join(stop_words) %>%
-  # Group by each word
   group_by(talent_id) %>% 
   count_() %>% 
   arrange(-n)
 
-# refactor levels of word in word_count_per_talent_id
+# Anpassung der Levels des Factor word für eine passende Reihenfolge beim plotten
 word_count_per_talent_id$word <- factor(word_count_per_talent_id$word, levels = word_count_per_talent_id$word)
 
-# new data frame with most used 20 words
+# Erstellen eines neuen Data Frames für die populärsten 20 Wörter und ihrer Häufigkeit
 most_20_words <- data_frame(word = word_count_per_talent_id$word[1:20], n = word_count_per_talent_id$n[1:20])
-# add all other words aggregated as "Other words" with their count
+
+# Dem neuen Data Frame werden alle weiteren Wörter und ihrer Häufigkeit unter dem Wort "Other words" hinzugefügt
 most_20_words <- rbind(most_20_words, data.frame(word = "Other words", n = sum(word_count_per_talent_id$n[21:length(word_count_per_talent_id)])))
-#refactor levels
+
+# Anpassung der Levels des Factor word für eine passende Reihenfolge beim plotten
 most_20_words$word <- factor(most_20_words$word, levels = most_20_words$word)
 
-# plot word count most used 20 words and other words
 A_most_20_words <-most_20_words  %>% top_n(20)
-most_20_words %>% filter (word!="Other words")%>%
+
+# Erstellung eines Colcharts zur visualisierung der populärsten 20 Wörter
+# Aus ästhetischen Gründen wurde "Other words" rausgerechnet
+most_20_words %>%
+  filter (word!="Other words") %>%
   ggplot(aes(x = word, y = n, fill=n)) +
   geom_col()+
   theme(text = element_text(size=20),
@@ -90,19 +92,22 @@ most_20_words %>% filter (word!="Other words")%>%
   ylab("Count")+
   xlab("Word")
 
-# 12060 were invited_to_call
+# Auflistung aller Talente welche zu einem Interview eingeladen wurden (12060)
 invited_to_call <- talents %>% 
   filter(invited_to_call == 1)
 
+# Auflistung alle Talente die Gebatched wurden, jedoch nicht zu einem Interview eingeladen wurden
 talents %>%
   filter(was_batched == 1, interview_invites != 0) %>% 
   count_()
 
+# Auflistung aller Talente die von einem Arbeitgeber eingestellt wurden
 talents %>% 
   filter(was_hired == 1) %>% 
   count_()
 
 # Wort auftreten in batched und !Wort in batched
+#bb
 was_batched <- talents %>% 
   filter(was_batched == 1) %>% 
   left_join(word_count)
@@ -162,182 +167,177 @@ developer_in_headline <- word_count %>%
   inner_join(talents) %>% 
   filter(interview_invites > 0)
 
-no_developer_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "developer"), by = "talent_id")
-
 experience_in_headline <- word_count %>% 
   filter(word == "experience") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
-
-no_experience_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "experience"), by = "talent_id")
-
 
 engineer_in_headline <- word_count %>% 
   filter(word == "engineer") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
 
-no_engineer_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "engineer"), by = "talent_id")
-
-
-
 senior_in_headline <- word_count %>% 
   filter(word == "senior") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
-
-no_senior_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "senior"), by = "talent_id")
-
-
 
 position_in_headline <- word_count %>% 
   filter(word == "position") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
 
-no_position_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "position"), by = "talent_id")
-
-
-
-
 experienced_in_headline <- word_count %>% 
   filter(word == "experienced") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
-
-no_experienced_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "experienced"), by = "talent_id") 
-
 
 fullstack_in_headline <- word_count %>% 
   filter(word == "fullstack") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
 
-no_fullstack_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "fullstack"), by = "talent_id") 
-
 java_in_headline <- word_count %>% 
   filter(word == "java") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
-
-no_java_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "java"), by = "talent_id") 
 
 backend_in_headline <- word_count %>% 
   filter(word == "backend") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
 
-no_backend_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "backend"), by = "talent_id") 
-
 frontend_in_headline <- word_count %>% 
   filter(word == "frontend") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
-
-no_frontend_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "frontend"), by = "talent_id") 
-
 
 javascript_in_headline <- word_count %>% 
   filter(word == "javascript") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
 
-no_javascript_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "javascript"), by = "talent_id") 
-
 python_in_headline <- word_count %>% 
   filter(word == "python") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
-
-no_python_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "python"), by = "talent_id") 
-
 
 software_in_headline <- word_count %>% 
   filter(word == "software") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
 
-no_software_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "software"), by = "talent_id")
-
 php_in_headline <- word_count %>% 
   filter(word == "php") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
-
-no_php_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "php"), by = "talent_id")
-
 
 lead_in_headline <- word_count %>% 
   filter(word == "lead") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
 
-no_lead_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "lead"), by = "talent_id")
-
-
 ruby_in_headline <- word_count %>% 
   filter(word == "ruby") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
-
-no_ruby_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "ruby"), by = "talent_id")
-
 
 opportunity_in_headline <- word_count %>% 
   filter(word == "opportunity") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
 
-no_opportunity_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "opportunity"), by = "talent_id")
-
-
 berlin_in_headline <- word_count %>% 
   filter(word == "berlin") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
-
-no_berlin_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "berlin"), by = "talent_id")
-
 
 data_in_headline <- word_count %>% 
   filter(word == "data") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
 
-no_data_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "data"), by = "talent_id")
-
-
 team_in_headline <- word_count %>% 
   filter(word == "team") %>% 
   inner_join(talents) %>% 
   filter(interview_invites > 0)
 
+no_developer_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "developer"), by = "talent_id")
+
+no_experience_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "experience"), by = "talent_id")
+
+no_engineer_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "engineer"), by = "talent_id")
+
+no_senior_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "senior"), by = "talent_id")
+
+no_position_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "position"), by = "talent_id")
+
+no_experienced_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "experienced"), by = "talent_id")
+
+no_fullstack_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "fullstack"), by = "talent_id")
+
+no_java_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "java"), by = "talent_id")
+
+no_backend_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "backend"), by = "talent_id")
+
+no_frontend_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "frontend"), by = "talent_id")
+
+no_javascript_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "javascript"), by = "talent_id")
+
+no_python_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "python"), by = "talent_id")
+
+no_software_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "software"), by = "talent_id")
+
+no_php_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "php"), by = "talent_id")
+
+no_lead_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "lead"), by = "talent_id")
+
+no_ruby_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "ruby"), by = "talent_id")
+
+no_opportunity_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "opportunity"), by = "talent_id")
+
+no_berlin_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "berlin"), by = "talent_id")
+
+no_data_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "data"), by = "talent_id")
+
 no_team_in_headline <- with_headlines %>% 
   anti_join(filter(word_count, word == "team"), by = "talent_id")
+  
+no_developer_in_headline %>% 
+  filter(interview_invites > 0) 
 
+no_experience_in_headline %>% 
+  filter(interview_invites > 0)
 
+no_engineer_in_headline %>% 
+  filter(interview_invites > 0)
 
+no_senior_in_headline %>% 
+  filter(interview_invites > 0)
 
-B_top_5_words <- most_20_words [1:20,] %>% 
+no_position_in_headline %>% 
+  filter(interview_invites > 0)
+
+B_top_20_words <- most_20_words [1:20,] %>% 
   mutate("used_invite" = c(
     nrow(developer_in_headline), 
     nrow(experience_in_headline), 
@@ -413,10 +413,10 @@ B_top_5_words <- most_20_words [1:20,] %>%
 
 
 
-B_top_5_words <-  B_top_5_words %>% 
+B_top_20_words <-  B_top_20_words %>% 
   mutate("perC_used_invite" = used_invite / n, "perC_not_used_invite" = total_not_used_invited / total_not_used, "Impact"=(perC_used_invite / perC_not_used_invite - 1)*100)
 
-B_top_5_words%>% 
+B_top_20_words%>% 
   ggplot(aes(x = word, y = Impact, fill= Impact)) +
   geom_col()+
   theme(text = element_text(size=20), axis.text.x = element_text(angle=90, hjust=1),legend.position="none")+
@@ -425,188 +425,183 @@ B_top_5_words%>%
   xlab("Word")
 
   
-B_top_5_words%>% 
+B_top_20_words%>% 
   ggplot(aes(x = word, y = perC_used_invite*100,fill = perC_used_invite)) +
   geom_col()+
   theme(text = element_text(size=20), axis.text.x = element_text(angle=90, hjust=1),legend.position="none")+
   ylab("Interview Invites in %")+
   xlab("Word")
 
+B_top_5_words <- most_20_words[1:5,] %>% 
+  mutate("used_invite" = c(nrow(developer_in_headline), nrow(experience_in_headline), nrow(engineer_in_headline), nrow(senior_in_headline), nrow(position_in_headline)), "total_not_used" = c(nrow(no_developer_in_headline), nrow(no_experience_in_headline), nrow(no_engineer_in_headline), nrow(no_senior_in_headline), nrow(no_position_in_headline)), "total_not_used_invited" = c(nrow(filter(no_developer_in_headline, interview_invites > 0)), nrow(filter(no_experience_in_headline, interview_invites > 0)), nrow(filter(no_engineer_in_headline, interview_invites > 0)), nrow(filter(no_senior_in_headline, interview_invites > 0)), nrow(filter(no_position_in_headline, interview_invites > 0))))
+
+B_top_5_words <-  B_top_5_words %>% 
+  mutate("%_used_invite" = used_invite / n, "%_not_used_invite" = total_not_used_invited / total_not_used)
+
+B_top_5_words %>% 
+  ggplot(aes(x = word, y = "%_used_invite", fill = used_invite)) +
+  geom_col()
+  
+
 ```
+
 ```{r}
 hire_developer_in_headline <- word_count %>% 
   filter(word == "developer") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
 
-hire_no_developer_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "developer"), by = "talent_id")
-
 hire_experience_in_headline <- word_count %>% 
   filter(word == "experience") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
-
-hire_no_experience_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "experience"), by = "talent_id")
-
 
 hire_engineer_in_headline <- word_count %>% 
   filter(word == "engineer") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
 
-hire_no_engineer_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "engineer"), by = "talent_id")
-
-
-
 hire_senior_in_headline <- word_count %>% 
   filter(word == "senior") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
-
-hire_no_senior_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "senior"), by = "talent_id")
-
-
 
 hire_position_in_headline <- word_count %>% 
   filter(word == "position") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
 
-hire_no_position_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "position"), by = "talent_id")
-
-
-
-
 hire_experienced_in_headline <- word_count %>% 
   filter(word == "experienced") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
-
-hire_no_experienced_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "experienced"), by = "talent_id") 
-
 
 hire_fullstack_in_headline <- word_count %>% 
   filter(word == "fullstack") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
 
-hire_no_fullstack_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "fullstack"), by = "talent_id") 
-
 hire_java_in_headline <- word_count %>% 
   filter(word == "java") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
-
-hire_no_java_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "java"), by = "talent_id") 
 
 hire_backend_in_headline <- word_count %>% 
   filter(word == "backend") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
 
-hire_no_backend_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "backend"), by = "talent_id") 
-
 hire_frontend_in_headline <- word_count %>% 
   filter(word == "frontend") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
-
-hire_no_frontend_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "frontend"), by = "talent_id") 
-
 
 hire_javascript_in_headline <- word_count %>% 
   filter(word == "javascript") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
 
-hire_no_javascript_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "javascript"), by = "talent_id") 
-
 hire_python_in_headline <- word_count %>% 
   filter(word == "python") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
-
-hire_no_python_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "python"), by = "talent_id") 
-
 
 hire_software_in_headline <- word_count %>% 
   filter(word == "software") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
 
-hire_no_software_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "software"), by = "talent_id")
-
 hire_php_in_headline <- word_count %>% 
   filter(word == "php") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
-
-hire_no_php_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "php"), by = "talent_id")
-
 
 hire_lead_in_headline <- word_count %>% 
   filter(word == "lead") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
 
-hire_no_lead_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "lead"), by = "talent_id")
-
-
 hire_ruby_in_headline <- word_count %>% 
   filter(word == "ruby") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
-
-hire_no_ruby_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "ruby"), by = "talent_id")
-
 
 hire_opportunity_in_headline <- word_count %>% 
   filter(word == "opportunity") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
 
-hire_no_opportunity_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "opportunity"), by = "talent_id")
-
-
 hire_berlin_in_headline <- word_count %>% 
   filter(word == "berlin") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
-
-hire_no_berlin_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "berlin"), by = "talent_id")
-
 
 hire_data_in_headline <- word_count %>% 
   filter(word == "data") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
 
-hire_no_data_in_headline <- with_headlines %>% 
-  anti_join(filter(word_count, word == "data"), by = "talent_id")
-
-
 hire_team_in_headline <- word_count %>% 
   filter(word == "team") %>% 
   inner_join(talents) %>% 
   filter(was_hired == 1)
+
+hire_no_developer_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "developer"), by = "talent_id")
+
+hire_no_experience_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "experience"), by = "talent_id")
+
+hire_no_engineer_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "engineer"), by = "talent_id")
+
+hire_no_senior_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "senior"), by = "talent_id")
+
+hire_no_position_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "position"), by = "talent_id")
+
+hire_no_experienced_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "experienced"), by = "talent_id") 
+
+hire_no_fullstack_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "fullstack"), by = "talent_id") 
+
+hire_no_java_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "java"), by = "talent_id") 
+
+hire_no_backend_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "backend"), by = "talent_id") 
+
+hire_no_frontend_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "frontend"), by = "talent_id") 
+
+hire_no_javascript_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "javascript"), by = "talent_id") 
+
+hire_no_python_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "python"), by = "talent_id") 
+
+hire_no_software_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "software"), by = "talent_id")
+
+hire_no_php_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "php"), by = "talent_id")
+
+hire_no_lead_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "lead"), by = "talent_id")
+
+hire_no_ruby_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "ruby"), by = "talent_id")
+
+hire_no_opportunity_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "opportunity"), by = "talent_id")
+
+hire_no_berlin_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "berlin"), by = "talent_id")
+
+hire_no_data_in_headline <- with_headlines %>% 
+  anti_join(filter(word_count, word == "data"), by = "talent_id")
 
 hire_no_team_in_headline <- with_headlines %>% 
   anti_join(filter(word_count, word == "team"), by = "talent_id")
@@ -711,8 +706,241 @@ C_hire_words%>%
 ```
 
 ```{r}
-install.packages("scales")
-install.packages("zoo")
+# Analyzing word and document frequency: tf-idf
+# Find important words through bind_tf_idf
+# the numbers are not very meaningful. Maybe they would be better if all headlines for a work_role are grouped and analyzed into one big headline.
+# what worked was to get words which were oftent used in combination with a given word
+# print out a ggraph didnt work
+
+headlines_bigrams <- headlines_df %>%
+  unnest_tokens(bigram, headline, token = "ngrams", n = 2)
+
+headlines_bigrams %>%
+  count_("bigram", sort = TRUE) %>% 
+  View()
+
+library(tidyr)
+
+bigrams_separated <- headlines_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigrams_filtered <- bigrams_separated %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+# new bigram counts:
+bigram_counts <- bigrams_filtered %>% 
+  dplyr::count(word1, word2)
+
+bigram_counts
+
+bigrams_united <- bigrams_filtered %>%
+  unite(bigram, word1, word2, sep = " ")
+
+bigrams_united
+
+bigrams_filtered %>%
+  dplyr::filter(word2 == "developer") %>%
+  dplyr::count(talent_id, word1, sort = TRUE) %>% 
+  View()
+
+developer_types <- bigrams_filtered %>%
+  dplyr::filter(word2 == "developer") %>%
+  dplyr::count(talent_id, word1, sort = TRUE) %>% 
+  group_by(word1) %>% 
+  dplyr::count_() %>% 
+  arrange(-nn)
+
+developer_types[1:10,] %>% 
+  ggplot(aes(x = reorder(word1, -nn), y = nn)) +
+  geom_col() +
+  xlab("Häufigst erwähnte Wörter im Zusammenhang mit developer") +
+  ylab("n")
+
+#install.packages("igraph")
+library(igraph)
+
+# original counts
+bigram_counts
+
+bigram_graph <- bigram_counts %>%
+  filter(n > 20) %>%
+  graph_from_data_frame()
+
+bigram_graph
+
+#install.packages("ggraph")
+library(ggraph)
+set.seed(2017)
+
+ggraph::ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+```
+
+
+```{r}
+# top 5 Wörter der work_roles
+with_headlines_work_roles <- with_headlines %>% 
+  filter(work_roles != "{}")
+
+# Anzahl der vertretenen workroles ermittelt
+with_headlines_work_roles %>% 
+  group_by(work_roles) %>% 
+  count_("work_roles") %>% 
+  arrange(-n) %>% 
+  View()
+
+#-----
+with_headlines_backend_fullstack <- with_headlines %>% 
+  filter(work_roles == "{Backend,Fullstack}")
+
+headlines_backend_fullstack_df <- data_frame(talent_id = with_headlines_backend_fullstack$talent_id, headline = as.vector(with_headlines_backend_fullstack$headline))
+
+# split a headline (one row per headline) to one word per row with corresponding talent_id
+unnested_headlines_backend_fullstack <- headlines_backend_fullstack_df %>%
+  unnest_tokens(word, headline)
+
+#
+unnested_headlines_backend_fullstack <- unnested_headlines_backend_fullstack %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+
+#top 5 Wörter in backend_fullstack
+unnested_headlines_backend_fullstack[1:5,] %>% 
+  View()
+
+#-----
+with_headlines_backend <- with_headlines %>% 
+  filter(work_roles == "{Backend}")
+
+headlines_backend_df <- data_frame(talent_id = with_headlines_backend$talent_id, headline = as.vector(with_headlines_backend$headline))
+
+# split a headline (one row per headline) to one word per row with corresponding talent_id
+unnested_headlines_backend <- headlines_backend_df %>%
+  unnest_tokens(word, headline)
+
+#
+unnested_headlines_backend <- unnested_headlines_backend %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+
+#top 5 Wörter in backend
+unnested_headlines_backend[1:5,] %>% 
+  View()
+
+#-----
+with_headlines_frontend <- with_headlines %>% 
+  filter(work_roles == "{Frontend}")
+
+headlines_frontend_df <- data_frame(talent_id = with_headlines_frontend$talent_id, headline = as.vector(with_headlines_frontend$headline))
+
+# split a headline (one row per headline) to one word per row with corresponding talent_id
+unnested_headlines_frontend <- headlines_frontend_df %>%
+  unnest_tokens(word, headline)
+
+#
+unnested_headlines_frontend <- unnested_headlines_frontend %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+
+#top 5 Wörter in frontend
+unnested_headlines_frontend[1:5,] %>% 
+  View()
+
+#-----
+with_headlines_mobile <- with_headlines %>% 
+  filter(work_roles == "{Mobile}")
+
+headlines_mobile_df <- data_frame(talent_id = with_headlines_mobile$talent_id, headline = as.vector(with_headlines_mobile$headline))
+
+# split a headline (one row per headline) to one word per row with corresponding talent_id
+unnested_headlines_mobile <- headlines_mobile_df %>%
+  unnest_tokens(word, headline)
+
+#
+unnested_headlines_mobile <- unnested_headlines_mobile %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+
+#top 5 Wörter in mobile
+unnested_headlines_mobile[1:5,] %>% 
+  View()
+  
+#-----
+with_headlines_frontend_fullstack <- with_headlines %>% 
+  filter(work_roles == "{Frontend,Fullstack}")
+
+headlines_frontend_fullstack_df <- data_frame(talent_id = with_headlines_frontend_fullstack$talent_id, headline = as.vector(with_headlines_frontend_fullstack$headline))
+
+# split a headline (one row per headline) to one word per row with corresponding talent_id
+unnested_headlines_frontend_fullstack <- headlines_frontend_fullstack_df %>%
+  unnest_tokens(word, headline)
+
+#
+unnested_headlines_frontend_fullstack <- unnested_headlines_frontend_fullstack %>%
+  # delete stop words
+  anti_join(stop_words) %>%
+  # Group by each word
+  group_by(word) %>% 
+  count_() %>% 
+  arrange(-n)
+
+#top 5 Wörter in frontend fullstack
+unnested_headlines_frontend_fullstack[1:5,] %>% 
+  View()
+
+#---- gesamtübersicht top 5 work roles
+
+top_5_words_per_work_role <- data_frame("{Backend,Fullstack}" = unnested_headlines_backend_fullstack$word[1:5],"{Backend,Fullstack} n" = unnested_headlines_backend_fullstack$n[1:5], "{Backend}" = unnested_headlines_backend$word[1:5], "{Backend} n" = unnested_headlines_backend$n[1:5], "{Frontend}" = unnested_headlines_frontend$word[1:5], "{Frontend} n" = unnested_headlines_frontend$n[1:5],  "{Mobile}" = unnested_headlines_mobile$word[1:5], "{Mobile} n" = unnested_headlines_mobile$n[1:5], "{Frontend,Fullstack}" = unnested_headlines_frontend_fullstack$word[1:5],  "{Frontend,Fullstack} n" = unnested_headlines_frontend_fullstack$n[1:5])
+
+#backend fullstack
+unnested_headlines_backend_fullstack[1:5,] %>% 
+  ggplot(aes(x = word, y = n)) +
+  geom_col() 
+
+#backend 
+unnested_headlines_backend[1:5,] %>% 
+  ggplot(aes(x = word, y = n)) +
+  geom_col() 
+
+#frontend
+unnested_headlines_frontend[1:5,] %>% 
+  ggplot(aes(x = word, y = n)) +
+  geom_col()
+
+#mobile
+unnested_headlines_mobile[1:5,] %>% 
+  ggplot(aes(x = word, y = n)) +
+  geom_col() 
+
+#frontend fullstack
+unnested_headlines_frontend_fullstack[1:5,] %>% 
+  ggplot(aes(x = word, y = n)) +
+  geom_col() 
+
+```
+
+```{r}
+#install.packages("scales")
+#install.packages("zoo")
 
 library(scales)
 library(zoo)
@@ -722,6 +950,18 @@ library(zoo)
 batches$created_at <- as.Date(batches$created_at)
 
 batches$month_year <- as.yearmon(batches$created_at)
+
+batches %>% 
+  left_join(unnested_headlines) %>% 
+  anti_join(stop_words) %>% 
+  group_by(month_year) %>% 
+  count_("word") %>% 
+  View()
+
+View(batches)
+
+
+
 
 B_batches_over_time <- batches %>% 
   group_by(batch_id) %>% 
@@ -733,8 +973,9 @@ ggplot(B_batches_over_time, aes(x = batch_id, y = n, fill=n)) +
   xlab("Batch ID")+
   theme(legend.position = "none")
 
-# Erkenntnis!!!!!: was_batched ist inkonsisten, es gibt mehr gebatchete talents in der baches.csv
-batches %>% 
+# Erkenntnis!!!!!: was_batched ist inkonsistent, es gibt mehr gebatchete talents in der baches.csv
+
+talent_id_and_count_error_was_batched <- batches %>% 
   left_join(unnested_headlines) %>% 
   left_join(talents) %>%
   filter(was_batched == 0) %>% 
@@ -742,9 +983,25 @@ batches %>%
   count_() %>% 
   View()
 
+error_was_batched <- batches %>% 
+  left_join(unnested_headlines) %>% 
+  left_join(talents) %>%
+  filter(was_batched == 0) %>% 
+  group_by(talent_id) %>% 
+  count_() %>% 
+  nrow()
+
+talents
+
 #TODO
 #ggplot colchart/barchar bar 1 count was_batched // bar 2 was batched in batches aber was_batched == 0
 # eventuell noch talents korrigieren
+# um gebatched zu werden brauch man eine headline
+
+
+data_frame( was_bached = c("talents","batches"), n = c(nrow(with_headlines_was_batched), error_was_batched + nrow(with_headlines_was_batched))) %>% 
+  ggplot(aes(x = was_bached, y = n)) +
+  geom_col()
 
 batches %>% 
   left_join(unnested_headlines) %>% 
@@ -973,27 +1230,3 @@ ggplot(aes(word, n)) +
   xlab(NULL) +
   coord_flip()
 ```
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
